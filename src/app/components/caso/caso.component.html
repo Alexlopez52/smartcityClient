@@ -1,0 +1,58 @@
+<h2>AES</h2>
+<div>
+  <form name ="postcaso" (ngSubmit)= "postCaso($event)">
+      <p>
+        <label>Nombre:
+        <input type="text" name="name" placeholder="Nombre" [(ngModel)]="name">  
+        </label>
+      </p>
+      <p>
+        <button type ="submit">Submit</button>
+      </p>
+  </form>
+
+  <div>
+    <button (click)="getSentence(); deleteSentence()">Mostrar FRASE del servidor con AES</button>
+    <h3>{{resultStr}} </h3>
+  </div>
+</div>
+
+<h2>RSA</h2>
+<div>
+  <form name ="postcasoRSA" (ngSubmit)= "postCasorsa()">
+      <p>
+        <label>Encriptar:
+        <input type="text" name="name" placeholder="Nombre" [(ngModel)]="name">  
+        </label>
+      </p>
+      <p>
+        <button type ="submit">Submit</button>
+      </p>
+      <h3>{{decrypted}} </h3>
+  </form>
+
+  <div>
+    <button (click)="getSentencersa()">Mostrar FRASE del servidor con RSA</button>
+    <h3>{{decrypsen}} </h3>
+  </div>
+
+
+  <form name ="signRSA" (ngSubmit)= "signMsgrsa()">
+    <p>
+      <label>Firmar:
+      <input type="text" name="sign" placeholder="sign" [(ngModel)]="sign">  
+      </label>
+    </p>
+    <p>
+      <button type ="submit">Firmar</button>
+    </p>
+    <h3>{{verified}} </h3>
+</form>
+
+<h2>NON REPUDIATION</h2>
+<div>
+  <button (click)="noRepudio()">Enviar algo con no repudio</button>
+</div>
+
+  
+</div>

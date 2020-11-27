@@ -1,0 +1,22 @@
+{
+  "name": "rsa",
+  "version": "1.0.0",
+  "description": "RSA encryption",
+  "main": "index.cjs.js",
+  "browser": "index.esm.js",
+  "types": "types/rsa.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c && node build/build.dts.js"
+  },
+  "author": "Sergi Vera",
+  "license": "ISC",
+  "dependencies": {
+    "bigint-conversion": "^2.1.1",
+    "bigint-crypto-utils": "^2.4.7"
+  },
+  "devDependencies": {
+    "rollup": "^2.0.6",
+    "typescript": "^3.8.3"
+  }
+}
