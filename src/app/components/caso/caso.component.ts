@@ -24,6 +24,8 @@ import * as objectSha from 'object-sha'
 export class CasoComponent implements OnInit {
   name: string; //textbox de encrypt
   sign: string; //textbox de firmar
+  textnonrepudiation: string; //textbox del no repudiation
+  resultadononrepudiation: string;
   body;
   timeout;
   encrypted:ArrayBuffer;
@@ -31,7 +33,6 @@ export class CasoComponent implements OnInit {
   algorithm;
   keyhex = '89a1f34a907ff9f5d27309e73c113f8eb084f9da8a5fedc61bb1cba3f54fa5de'
   resultStr= '';
- 
   respuesta: string;
   decrypted: string;
   decrypsen;
@@ -41,7 +42,6 @@ export class CasoComponent implements OnInit {
   r: BigInt;
   _ONE: BigInt = BigInt(1);
   rsa  = new classRSA;
-  de;
   publicKeyTTP;
 
 
@@ -232,8 +232,8 @@ async getSentencersa() {            //OK
     async noRepudio(){
       /////////////////////////////////////simetric////////////////////////////////////
     let keybuff =  await crypto.subtle.importKey('raw', hexToBuf(this.keyhex), 'AES-CBC', false, ['encrypt'])
-    console.log("has escrito AES: "+ "pepe peposo")
-    let encoded = getMessageEncoding("pepe peposo")
+    console.log("has escrito AES: "+ this.textnonrepudiation)
+    let encoded = getMessageEncoding(this.textnonrepudiation)
 
     this.iv = crypto.getRandomValues(new Uint8Array(16));
     let encrypted = await crypto.subtle.encrypt({
@@ -310,6 +310,7 @@ async getSentencersa() {            //OK
            if(e== "zi")
            {
              console.log("de puting mother")
+             this.resultadononrepudiation= "La TTP ha recibido tu mensaje"
              
           }
           else console.log("no")
@@ -368,6 +369,7 @@ async getSentencersa() {            //OK
       this.casoService.postpubKeyTTP(publicclient).subscribe(
           (data) => {
             console.log(data);
+            
           },
           
           (err) => {

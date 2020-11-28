@@ -50,9 +50,18 @@
 </form>
 
 <h2>NON REPUDIATION</h2>
-<div>
-  <button (click)="noRepudio()">Enviar algo con no repudio</button>
-</div>
+<form name ="No repudio" (ngSubmit)= "noRepudio()">
+  <p>
+    <label>Nonrepudiation:
+    <input type="text" name="norepudio" placeholder="textnonrepudiation" [(ngModel)]="textnonrepudiation">  
+    </label>
+  </p>
+  <p>
+    <button type ="submit">Nonrepudiation</button>
+  </p>
+  <h3>{{resultadononrepudiation}} </h3>
+</form>
+
 
   
 </div>
