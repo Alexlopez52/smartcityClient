@@ -24,7 +24,13 @@ export class PrivateKey {
         } 
         else return bcu.modPow(h, this.d, this.n);
     }
-
+    signsinconv(h) {
+        if (this.valVerify(h)) {
+            console.log("Message to sign > n");
+            return null;
+        } 
+        else return bcu.modPow(h, this.d, this.n);
+    }
     valVerify(m) {
         if ((m > this.n))
             console.log("message is greater than n");

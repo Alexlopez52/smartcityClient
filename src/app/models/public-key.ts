@@ -18,8 +18,7 @@ export class PublicKey {
         } 
         else return bcu.modPow(m, this.e, this.n);
     }
-    encrypthex(m) {
-        m = bc.hexToBigint(m);
+    encryptsinconv(m) { //antes havia un hextobigint si algo falla puede ser eso
         if (this.valVerify(m)) {
             console.log("Message to encrypt > n");
             return null;

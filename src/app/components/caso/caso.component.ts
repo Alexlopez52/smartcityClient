@@ -122,18 +122,18 @@ export class CasoComponent implements OnInit {
  /////////////////////////RSA/////////////////////////////////////
 async getSentencersa() {            //OK 
     //await this.postpubKeyRSA()
-  /*   if(this.testblindsignature())
+    if(this.testblindsignature())
     {
       console.log("blind signature ok")
     }
-    else console.log("blind signature ko") */
+    else console.log("blind signature ko")
 
     this.casoService.getFraseRSA().subscribe(
        async (data) => {
           this.body = data;
-          console.log("MI PUBLIC KEY : "+ this.rsa.publicKey.e);
-          console.log("MI Private KEY : "+ this.rsa.privateKey.d);
-          console.log("the body : "+ this.body.msg)
+          //console.log("MI PUBLIC KEY : "+ this.rsa.publicKey.e);
+          //console.log("MI Private KEY : "+ this.rsa.privateKey.d);
+          //console.log("the body : "+ this.body.msg)
           this.decrypsen = await this.rsa.privateKey.decrypt(this.body.msg)       
           console.log(this.decrypsen)  
           //this.deleteSentence()
@@ -143,20 +143,22 @@ async getSentencersa() {            //OK
         }
       );
   }
- /*  testblindsignature(){ //firma ciega
-    const m = "hello" 
-    // cegado
-    const r = bcu.randBetween(this.rsa.publicKey.n)
-
-    const blindedm = (bc.textToBigint(m)*this.rsa.publicKey.encrypt(r))%this.rsa.publicKey.n
-    const signedbm= this.rsa.privateKey.sign(blindedm)
-    const signedm= (signedbm*bcu.modInv(r,this.rsa.publicKey.n))%this.rsa.publicKey.n
-      const verifiedm= bc.bigintToText( this.rsa.publicKey.verify(signedm))
+  testblindsignature(){ //firma ciega
+      const m = "hello" 
+      const bigintm = bc.textToBigint(m)
+      // cegado
+      const n = this.rsa.publicKey.n
+      const r = bcu.randBetween(n) //ya es un bigint
+      const renc= this.rsa.publicKey.encryptsinconv(r) 
+      const blindedm = (bigintm*renc)%n 
+      const signedbm= this.rsa.privateKey.signsinconv(blindedm)
+      const signedm= (signedbm*bcu.modInv(r,n))%n
+      const verifiedm= bc.bigintToText(this.rsa.publicKey.verify(signedm))
 
       console.log("m = "+ verifiedm)
 
       return m ===verifiedm
-    } */
+    }
   
   
   async postCasorsa() {   //OK 
@@ -178,19 +180,29 @@ async getSentencersa() {            //OK
     }
 
    
-    async signMsgrsa() {  // ESTO FIRMA DESDE EL SERVIDOR, PREGUNTAR SI NECESARIO DESDE CLIENTE
-      let m = bc.bigintToHex(bc.textToBigint(this.sign));
+    async signMsgrsa() {  // ESTO FIRMA CIEGA DESDE EL SERVIDOR
+      let m = this.sign;
+      const bigintm = bc.textToBigint(m)
+      // cegado
+      const n = this.publicKey.n
+      const r = bcu.randBetween(n) //ya es un bigint
+      const renc= this.publicKey.encryptsinconv(r) 
+      const blindedm = (bigintm*renc)%n 
       let message = {
-        msg: m
-      };
-
+        msg: bc.bigintToHex(blindedm)
+      };  
+      //const signedbm= this.rsa.privateKey.signsinconv(blindedm) server 
+     
       // Print the response to see if the response coincides with the message  
       this.casoService.postSignRSA(message).subscribe(
           (data) => {
+            
             let s = bc.hexToBigint(data['msg']);
-            let m = bc.bigintToText(this.publicKey.verify(s));//Este biging to text esaba antes en publickey, si no va cambiaer d nuev
-            if (m ==this.sign) //SI EL MENSAJE ES IGUAL AL FIRMADO
-            this.verified = m;
+             const signedm= (s*bcu.modInv(r,n))%n
+             const verifiedm= bc.bigintToText(this.publicKey.verify(signedm))
+            console.log(verifiedm)
+           if (verifiedm ==this.sign) //SI EL MENSAJE ES IGUAL AL FIRMADO
+            this.verified = verifiedm;
             else this.verified="NO SE HA VERIFICADO CON EXITO"
 
           },
