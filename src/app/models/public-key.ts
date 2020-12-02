@@ -4,10 +4,12 @@ import * as bc from 'bigint-conversion';
 export class PublicKey {
     e;
     n;
+    _n2;
   
     constructor(e, n) {
       this.e = e;
       this.n = n;
+      this._n2 = this.n ** BigInt(2) // cache n^2
     }
 
     encrypt(m) {
@@ -40,4 +42,8 @@ export class PublicKey {
             console.log("message is greater than n");
         return m > this.n;
     }
+
+    addition (ciphertexts) {  //ciphertexts es un array de lo que he enciptado
+        return ciphertexts.reduce((sum, next) => sum * next % (this._n2), BigInt(1))
+      }
 }

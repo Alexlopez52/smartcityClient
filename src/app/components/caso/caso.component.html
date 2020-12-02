@@ -1,33 +1,34 @@
-<h2>AES</h2>
+<h2>///////////////////////////  AES  ///////////////////////////</h2>
 <div>
+
   <form name ="postcaso" (ngSubmit)= "postCaso($event)">
-      <p>
+    <div>
         <label>Nombre:
-        <input type="text" name="name" placeholder="Nombre" [(ngModel)]="name">  
+        <input type="text" name="nameaes" placeholder="Nombre" [(ngModel)]="nameaes">  
         </label>
-      </p>
-      <p>
+      
         <button type ="submit">Submit</button>
-      </p>
+    </div>
   </form>
 
+  
   <div>
     <button (click)="getSentence(); deleteSentence()">Mostrar FRASE del servidor con AES</button>
     <h3>{{resultStr}} </h3>
   </div>
+  
 </div>
 
-<h2>RSA</h2>
+<h2>///////////////////////////  RSA  ///////////////////////////</h2>
 <div>
   <form name ="postcasoRSA" (ngSubmit)= "postCasorsa()">
-      <p>
+    <div>
         <label>Encriptar:
         <input type="text" name="name" placeholder="Nombre" [(ngModel)]="name">  
         </label>
-      </p>
-      <p>
+
         <button type ="submit">Submit</button>
-      </p>
+      </div>
       <h3>{{decrypted}} </h3>
   </form>
 
@@ -38,30 +39,48 @@
 
 
   <form name ="signRSA" (ngSubmit)= "signMsgrsa()">
-    <p>
+    <div>
       <label>Firmar:
-      <input type="text" name="sign" placeholder="sign" [(ngModel)]="sign">  
+      <input type="text" name="signRSA" placeholder="signRSA" [(ngModel)]="name">  
       </label>
-    </p>
-    <p>
-      <button type ="submit">Firmar</button>
-    </p>
-    <h3>{{verified}} </h3>
-</form>
+    
+      <button type ="submit">Firmar RSA</button>
+    </div>
+    <h3>{{verifiedRSA}} </h3>
+  </form>
+</div>
 
-<h2>NON REPUDIATION</h2>
-<form name ="No repudio" (ngSubmit)= "noRepudio()">
-  <p>
-    <label>Nonrepudiation:
-    <input type="text" name="norepudio" placeholder="textnonrepudiation" [(ngModel)]="textnonrepudiation">  
-    </label>
-  </p>
-  <p>
-    <button type ="submit">Nonrepudiation</button>
-  </p>
-  <h3>{{resultadononrepudiation}} </h3>
-</form>
+<h2>///////////////////////////  FIRMA CIEGA  ///////////////////////////</h2>
+<div>
+  <form name ="signCiega" (ngSubmit)= "signMsgciega()">
+    <div>
+      <label>Firmar:
+      <input type="text" name="signFirmaCiega" placeholder="signFirmaCiega" [(ngModel)]="sign">  
+      </label>
 
+      <button type ="submit">Firmar Ciega</button>
+    </div>
+    <h3>{{verifiedCiega}} </h3>
+  </form>
+</div>
 
-  
+<h2>///////////////////////////  NON REPUDIATION  ///////////////////////////</h2>
+<div>
+  <form name ="No repudio" (ngSubmit)= "noRepudio()">
+    <div>
+      <label>Nonrepudiation:
+      <input type="text" name="norepudio" placeholder="textnonrepudiation" [(ngModel)]="textnonrepudiation">  
+      </label>
+
+      <button type ="submit">Nonrepudiation</button>
+    </div>
+    <h3>{{resultadononrepudiation}} </h3>
+  </form>
+</div>
+
+<h2>///////////////////////////   PAILLIER (homomorphic encryption)  ///////////////////////////</h2>
+<div>
+        <button (click)="postPaillier()">Suma de 10 + 5</button>
+        <h3>{{sum}} </h3>
+
 </div>

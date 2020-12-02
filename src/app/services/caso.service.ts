@@ -48,19 +48,29 @@ export class CasoService {
   getpublicKeyRSA() {
     return this.http.get(this.ambiente.urlCaso + '/publickey');
     }
-    ///////////////////////////////////NO REPUDIO/////////////////////////////////////////
-    postCasoRSANoRepudio(body: object) {
-      return this.http.post(this.ambiente.urlCaso + '/addPostNoRepudio', body);
-        }
-    postCasoNoRepudioTipo3(body: object) {
-       return this.http.post(this.ambiente.urlTtp + '/postTTP', body);
-     }    
-    getpublicKeyTTP(){
-      return this.http.get(this.ambiente.urlTtp + '/publickey');
-      }
-    postpubKeyTTP(body: object) {  //send publicKey del cliente al servidor para encryptar mensaje
-        return this.http.post(this.ambiente.urlTtp + '/postpublicKey', body);
-          }
 
+///////////////////////////////////FIRMA CIEGA/////////////////////////////////////////
+  postSignCiega(body: object) {
+    return this.http.post(this.ambiente.urlCaso + '/signCiega', body);
+    }
+  
+///////////////////////////////////NO REPUDIO/////////////////////////////////////////
+  postCasoRSANoRepudio(body: object) {
+    return this.http.post(this.ambiente.urlCaso + '/addPostNoRepudio', body);
+      }
+  postCasoNoRepudioTipo3(body: object) {
+      return this.http.post(this.ambiente.urlTtp + '/postTTP', body);
+    }    
+  getpublicKeyTTP(){
+    return this.http.get(this.ambiente.urlTtp + '/publickey');
+    }
+  postpubKeyTTP(body: object) {  //send publicKey del cliente al servidor para encryptar mensaje
+      return this.http.post(this.ambiente.urlTtp + '/postpublicKey', body);
+        }
+
+///////////////////////////////PAILLIER (homomorphic encryption) ///////////////////////////////////////////////
+  postsumPaillier(suma: object) {  //
+      return this.http.post(this.ambiente.urlCaso + '/postpaillierSum', suma);
+        }
 
   }

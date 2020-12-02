@@ -8,6 +8,7 @@ import * as bc from 'bigint-conversion';
 import { RSA  as classRSA, RSA} from 'src/app/models/rsa';
 import { PublicKey  as Classpublickey} from "src/app/models/public-key";
 import * as objectSha from 'object-sha'
+import * as paillierBigint from 'paillier-bigint'
 //NOTAS IMPORTANTES para lo del Buffer:
 //Poner esto en el polyfills.ts
 //(window as any).global = window;
@@ -22,9 +23,13 @@ import * as objectSha from 'object-sha'
   styleUrls: ['./caso.component.css']
 })
 export class CasoComponent implements OnInit {
-  name: string; //textbox de encrypt
-  sign: string; //textbox de firmar
+  nameaes: string; //textbox de AES
+  name: string; //textbox de encrypt RSA y firmar RSA
+  sign: string; //textbox de firmar Ciega
+  sum: BigInt;  //para la suma
   textnonrepudiation: string; //textbox del no repudiation
+  verifiedRSA: string;
+  verifiedCiega: string;
   resultadononrepudiation: string;
   body;
   timeout;
@@ -36,8 +41,7 @@ export class CasoComponent implements OnInit {
   respuesta: string;
   decrypted: string;
   decrypsen;
-  verified: string;
-  publicKey;   //publicKey del servidor
+  publicKeyserver;   //publicKey del servidor
   keyPair;
   r: BigInt;
   _ONE: BigInt = BigInt(1);
@@ -61,8 +65,8 @@ export class CasoComponent implements OnInit {
  /////////////////////////AES/////////////////////////////////////
   public async postCaso(event){
     let keybuff =  await crypto.subtle.importKey('raw', hexToBuf(this.keyhex), 'AES-CBC', false, ['encrypt'])
-    console.log("has escrito AES: "+ this.name)
-    let encoded = getMessageEncoding(this.name)
+    console.log("has escrito AES: "+ this.nameaes)
+    let encoded = getMessageEncoding(this.nameaes)
 
     this.iv = crypto.getRandomValues(new Uint8Array(16));
     let encrypted = await crypto.subtle.encrypt({
@@ -120,14 +124,8 @@ export class CasoComponent implements OnInit {
 
 
  /////////////////////////RSA/////////////////////////////////////
-async getSentencersa() {            //OK 
+  async getSentencersa() {            //OK 
     //await this.postpubKeyRSA()
-    if(this.testblindsignature())
-    {
-      console.log("blind signature ok")
-    }
-    else console.log("blind signature ko")
-
     this.casoService.getFraseRSA().subscribe(
        async (data) => {
           this.body = data;
@@ -142,27 +140,11 @@ async getSentencersa() {            //OK
           console.log("err", err);
         }
       );
-  }
-  testblindsignature(){ //firma ciega
-      const m = "hello" 
-      const bigintm = bc.textToBigint(m)
-      // cegado
-      const n = this.rsa.publicKey.n
-      const r = bcu.randBetween(n) //ya es un bigint
-      const renc= this.rsa.publicKey.encryptsinconv(r) 
-      const blindedm = (bigintm*renc)%n 
-      const signedbm= this.rsa.privateKey.signsinconv(blindedm)
-      const signedm= (signedbm*bcu.modInv(r,n))%n
-      const verifiedm= bc.bigintToText(this.rsa.publicKey.verify(signedm))
-
-      console.log("m = "+ verifiedm)
-
-      return m ===verifiedm
     }
   
   
   async postCasorsa() {   //OK 
-      let c = await this.publicKey.encrypt(this.name);  
+      let c = await this.publicKeyserver.encrypt(this.name);  
       let message = {
         msg: bc.bigintToHex(c)
       };
@@ -180,37 +162,25 @@ async getSentencersa() {            //OK
     }
 
    
-    async signMsgrsa() {  // ESTO FIRMA CIEGA DESDE EL SERVIDOR
-      let m = this.sign;
-      const bigintm = bc.textToBigint(m)
-      // cegado
-      const n = this.publicKey.n
-      const r = bcu.randBetween(n) //ya es un bigint
-      const renc= this.publicKey.encryptsinconv(r) 
-      const blindedm = (bigintm*renc)%n 
-      let message = {
-        msg: bc.bigintToHex(blindedm)
-      };  
-      //const signedbm= this.rsa.privateKey.signsinconv(blindedm) server 
-     
-      // Print the response to see if the response coincides with the message  
-      this.casoService.postSignRSA(message).subscribe(
-          (data) => {
-            
-            let s = bc.hexToBigint(data['msg']);
-             const signedm= (s*bcu.modInv(r,n))%n
-             const verifiedm= bc.bigintToText(this.publicKey.verify(signedm))
-            console.log(verifiedm)
-           if (verifiedm ==this.sign) //SI EL MENSAJE ES IGUAL AL FIRMADO
-            this.verified = verifiedm;
-            else this.verified="NO SE HA VERIFICADO CON EXITO"
+  async signMsgrsa() {  // esto es sign de rsa
+    let m = bc.bigintToHex(bc.textToBigint(this.name));
+    let message = {
+      msg: m
+    };
 
-          },
-          (err) => {
-            console.log("err", err);
-          }
-          );
-    }
+    // Print the response to see if the response coincides with the message  
+    this.casoService.postSignRSA(message).subscribe(
+        (data) => {
+          let s = bc.hexToBigint(data['msg']);
+          let m = bc.bigintToText(this.publicKeyserver.verify(s));
+          this.verifiedRSA = m;
+        },
+        (err) => {
+          console.log("err", err);
+        }
+        );
+   }
+
     async postpubKeyRSA() {
       //console.log(this.rsa.publicKey)
       //bc.bigintToText(this.rsa.publicKey);
@@ -232,17 +202,93 @@ async getSentencersa() {            //OK
       
       this.casoService.getpublicKeyRSA().subscribe(
           (data) => {
-            this.publicKey = new Classpublickey(bc.hexToBigint(data["e"]),bc.hexToBigint(data["n"]))
-            console.log(this.publicKey);
+            this.publicKeyserver = new Classpublickey(bc.hexToBigint(data["e"]),bc.hexToBigint(data["n"]))
+            console.log(this.publicKeyserver);
           },
           (err) => {
             console.log("err", err);
           }
         );
     }
- /////////////////////////////////////////NON REPUDIATION///////////////////////////////////////////////////
+
+/////////////////////////////////////////FIRMA CIEGA///////////////////////////////////////////////////
+async getSentenceCiega() {            //OK 
+  //await this.postpubKeyRSA()
+  if(this.testblindsignature())
+  {
+    console.log("blind signature ok")
+  }
+  else console.log("blind signature ko")
+
+  this.casoService.getFraseRSA().subscribe(
+     async (data) => {
+        this.body = data;
+        //console.log("MI PUBLIC KEY : "+ this.rsa.publicKey.e);
+        //console.log("MI Private KEY : "+ this.rsa.privateKey.d);
+        //console.log("the body : "+ this.body.msg)
+        this.decrypsen = await this.rsa.privateKey.decrypt(this.body.msg)       
+        console.log(this.decrypsen)  
+        //this.deleteSentence()
+      },
+      (err) => {
+        console.log("err", err);
+      }
+    );
+  }
+
+testblindsignature(){ //firma ciega
+    const m = "hello" 
+    const bigintm = bc.textToBigint(m)
+    // cegado
+    const n = this.rsa.publicKey.n
+    const r = bcu.randBetween(n) //ya es un bigint
+    const renc= this.rsa.publicKey.encryptsinconv(r) 
+    const blindedm = (bigintm*renc)%n 
+    const signedbm= this.rsa.privateKey.signsinconv(blindedm)
+    const signedm= (signedbm*bcu.modInv(r,n))%n
+    const verifiedm= bc.bigintToText(this.rsa.publicKey.verify(signedm))
+
+    console.log("m = "+ verifiedm)
+
+    return m ===verifiedm
+  }
+
+  async signMsgciega() {  // ESTO FIRMA CIEGA DESDE EL SERVIDOR
+    let m = this.sign;  //textbox de la palabra que pasamos
+    const bigintm = bc.textToBigint(m)
+    // cegado
+    const n = this.publicKeyserver.n
+    const r = bcu.randBetween(n) //ya es un bigint
+    const renc= this.publicKeyserver.encryptsinconv(r) 
+    const blindedm = (bigintm*renc)%n 
+    let message = {
+      msg: bc.bigintToHex(blindedm)
+    };  
+    //const signedbm= this.rsa.privateKey.signsinconv(blindedm) server 
+   
+    // Print the response to see if the response coincides with the message  
+    this.casoService.postSignCiega(message).subscribe(
+        (data) => {
+          
+          let s = bc.hexToBigint(data['msg']);
+           const signedm= (s*bcu.modInv(r,n))%n
+           const verifiedm= bc.bigintToText(this.publicKeyserver.verify(signedm))
+          console.log(verifiedm)
+         if (verifiedm ==this.sign) //SI EL MENSAJE ES IGUAL AL FIRMADO
+          this.verifiedCiega = verifiedm;
+          else this.verifiedCiega = "NO SE HA VERIFICADO CON EXITO"
+
+        },
+        (err) => {
+          console.log("err", err);
+        }
+        );
+  }
+
+
+/////////////////////////////////////////NON REPUDIATION///////////////////////////////////////////////////
     async noRepudio(){
-      /////////////////////////////////////simetric////////////////////////////////////
+//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\simetric\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     let keybuff =  await crypto.subtle.importKey('raw', hexToBuf(this.keyhex), 'AES-CBC', false, ['encrypt'])
     console.log("has escrito AES: "+ this.textnonrepudiation)
     let encoded = getMessageEncoding(this.textnonrepudiation)
@@ -255,48 +301,48 @@ async getSentencersa() {            //OK
     keybuff,
     encoded);
     console.log("encriptado : " +  encrypted)
-    let EncryptedDataArray=new Uint8Array(encrypted);
-    let EncryptedDataString=ab2str(EncryptedDataArray);
-       //////////////////////////////////////////////////////////////////////////////////
+    let EncryptedDataArray = new Uint8Array(encrypted);
+    let EncryptedDataString = ab2str(EncryptedDataArray);
+//\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
      // let mensaje = "pepe peposo" //tendria que ser un mensaje encriptado simetrico
-     let mensaje =EncryptedDataString 
-      let encmsg: string= await bc.bigintToHex(this.publicKey.encrypt(mensaje)) //si no va cambiar a hex
-      let d = new Date();
-      const unixtime = d.valueOf();
-      let body:Object = {type:"1",src:"A",dst:"B",ttp:"7800",ts:unixtime,msg:encmsg}
-      let prueba = await this.digitalSignature(body);
-      let ivStr = ab2str(this.iv)
-      let obj:Object  = {
-        iv: ivStr,
-        body:body,
-        proof:{type:"origin",proof: prueba, fields:["type","src","dst","ttp","ts","msg"]}
-      }
-       this.casoService.postCasoRSANoRepudio(obj).subscribe(
-        async (data) => {
-          //this.decrypted = bc.bigintToText(bc.hexToBigint(data['msg']));
-          //console.log("has escrito RSA: "+ this.decrypted)
-        
-          let obj = data['obj'] 
-        console.log(obj)
-          let body = obj.body //en vez de enviar el msg desde B se puede añadir con el de aqui
-          let proof = await bc.hexToBigint(obj.proof.proof)
-           let e =  await this.VerifyProof(proof,body)
-           if(e== "zi")
-           {
-             console.log("de puting mother")
-             this.BdiceSi()
-          }
-          else console.log("no")
-        },        
-        (err) => {
-          console.log(err);
+    let mensaje =EncryptedDataString 
+    let encmsg: string= await bc.bigintToHex(this.publicKeyserver.encrypt(mensaje)) //si no va cambiar a hex
+    let d = new Date();
+    const unixtime = d.valueOf();
+    let body:Object = {type:"1",src:"A",dst:"B",ttp:"7800",ts:unixtime,msg:encmsg}
+    let prueba = await this.digitalSignature(body);
+    let ivStr = ab2str(this.iv)
+    let obj:Object  = {
+      iv: ivStr,
+      body:body,
+      proof:{type:"origin",proof: prueba, fields:["type","src","dst","ttp","ts","msg"]}
+    }
+      this.casoService.postCasoRSANoRepudio(obj).subscribe(
+      async (data) => {
+        //this.decrypted = bc.bigintToText(bc.hexToBigint(data['msg']));
+        //console.log("has escrito RSA: "+ this.decrypted)
+      
+        let obj = data['obj'] 
+      console.log(obj)
+        let body = obj.body //en vez de enviar el msg desde B se puede añadir con el de aqui
+        let proof = await bc.hexToBigint(obj.proof.proof)
+          let e =  await this.VerifyProof(proof,body)
+          if(e== "zi")
+          {
+            console.log("de puting mother")
+            this.BdiceSi()
         }
-      );
+        else console.log("no")
+      },        
+      (err) => {
+        console.log(err);
+      }
+    );
     }
     async BdiceSi(){
       //await this.getPublicKeyTTP()
       let mensaje = this.keyhex  
-      let encmsg: string= await bc.bigintToHex(this.publicKey.encrypt(mensaje)) //si no va cambiar a hex
+      let encmsg: string= await bc.bigintToHex(this.publicKeyserver.encrypt(mensaje)) //si no va cambiar a hex
       let d = new Date();
       const unixtime = d.valueOf();
       let body:Object = {type:"3",src:"A",dst:"B",ttp:"7800",ts:unixtime,msg:encmsg}
@@ -359,7 +405,7 @@ async getSentencersa() {            //OK
         console.log("esto es de la ttp")
       hashproof= await bc.bigintToHex(this.publicKeyTTP.verify(proof))
       }
-      else hashproof= await bc.bigintToHex(this.publicKey.verify(proof)) //verify de B
+      else hashproof= await bc.bigintToHex(this.publicKeyserver.verify(proof)) //verify de B
       
       
        console.log("1: "+hashobj)
@@ -389,8 +435,43 @@ async getSentencersa() {            //OK
           }
         );
     }
-}
 
+
+///////////////////////////////PAILLIER (homomorphic encryption) ///////////////////////////////////////////////
+ async postPaillier() {
+
+  //const publicKeyPaillier = new paillierBigint.PublicKey(this.publicKey.n, this.publicKey.e)
+  const m1: BigInt = BigInt(10);
+  const m2: BigInt = BigInt(5);
+
+  const c1 = this.publicKeyserver.encrypt(m1)
+  const c2 = this.publicKeyserver.encrypt(m2)
+  console.log(c1)
+  console.log(c2)
+
+  const ciphertext = [c1, c2] // array
+
+  const encryptedSum = bc.bigintToHex(this.publicKeyserver.addition(ciphertext))
+
+
+  let message = {
+    encryptedsum: encryptedSum
+  };
+  console.log(encryptedSum)
+
+  this.casoService.postsumPaillier(message).subscribe(
+      (data) => {
+        this.sum = bc.hexToBigint(data['sum'])
+        console.log(this.sum);
+      },
+      
+      (err) => {
+        console.log("err", err);
+      }
+    );
+  }
+
+}
 
 function hexToBuf (hexStr) {  //pasar de hexadecimal a Buffer
   hexStr = !(hexStr.length % 2) ? hexStr : '0' + hexStr
