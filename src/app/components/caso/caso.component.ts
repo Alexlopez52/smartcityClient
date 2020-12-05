@@ -9,6 +9,7 @@ import { RSA  as classRSA, RSA} from 'src/app/models/rsa';
 import { PublicKey  as Classpublickey} from "src/app/models/public-key";
 import * as objectSha from 'object-sha'
 import * as paillierBigint from 'paillier-bigint'
+import { split, combine } from 'shamirs-secret-sharing'
 //NOTAS IMPORTANTES para lo del Buffer:
 //Poner esto en el polyfills.ts
 //(window as any).global = window;
@@ -47,6 +48,8 @@ export class CasoComponent implements OnInit {
   _ONE: BigInt = BigInt(1);
   rsa  = new classRSA;
   publicKeyTTP;
+  publicKeyPaill;
+  secretsharingtext;
 
 
   constructor(private casoService: CasoService) { }
@@ -56,9 +59,10 @@ export class CasoComponent implements OnInit {
     console.log(this.keyPair);
     //console.log(this.rsa.publicKey);
     await this.getPublicKeyrsa();
-    await this.postpubKeyRSA()
-    await this.getPublicKeyTTP()
-    await this.postpubKeyRSATTP()
+    await this.postpubKeyRSA();
+    await this.getPublicKeyTTP();
+    await this.postpubKeyRSATTP();
+    await this.getPublicKeyPaill();
     console.log("todo ok")
   }
 
@@ -391,6 +395,7 @@ testblindsignature(){ //firma ciega
           }
         );
     }
+
     async digitalSignature(obj:Object){
       const digest = await objectSha.digest(obj)
       return bc.bigintToHex(this.rsa.privateKey.sign(digest)); //si no va cambiar a hex
@@ -438,26 +443,36 @@ testblindsignature(){ //firma ciega
 
 
 ///////////////////////////////PAILLIER (homomorphic encryption) ///////////////////////////////////////////////
- async postPaillier() {
 
-  //const publicKeyPaillier = new paillierBigint.PublicKey(this.publicKey.n, this.publicKey.e)
+async getPublicKeyPaill() {  //pide la publicKey del servidor 
+      
+  this.casoService.getpublicKeyPaillier().subscribe(
+      (data) => {
+        this.publicKeyPaill = new paillierBigint.PublicKey(bc.hexToBigint(data["n"]),bc.hexToBigint(data["g"]))
+        console.log("Esta es la public Key paillier del server:");
+        console.log(this.publicKeyPaill);
+      },
+      (err) => {
+        console.log("err", err);
+      }
+    );
+}
+
+
+ async postPaillier() {
   const m1: BigInt = BigInt(10);
   const m2: BigInt = BigInt(5);
 
-  const c1 = this.publicKeyserver.encrypt(m1)
-  const c2 = this.publicKeyserver.encrypt(m2)
-  console.log(c1)
-  console.log(c2)
+  const c1 = this.publicKeyPaill.encrypt(m1)
+  const c2 = this.publicKeyPaill.encrypt(m2)
 
-  const ciphertext = [c1, c2] // array
-
-  const encryptedSum = bc.bigintToHex(this.publicKeyserver.addition(ciphertext))
+  const encryptedSum = bc.bigintToHex(this.publicKeyPaill.addition(c1, c2))
 
 
   let message = {
     encryptedsum: encryptedSum
   };
-  console.log(encryptedSum)
+  console.log("La encryptedsum funciona")
 
   this.casoService.postsumPaillier(message).subscribe(
       (data) => {
@@ -470,6 +485,42 @@ testblindsignature(){ //firma ciega
       }
     );
   }
+
+
+/////////////////////////////// SECRET SHARING ///////////////////////////////////////////////
+// Hex de las shares[]
+// 08019fb22cf853b58144156692a2824f10bd7592919544193bfcbe4f7dcf6a7a8784
+// 08024895d22fc64166e87992a6ea08849d774fd219776877c261bf6d6b966b15f20a
+// 080387cfd0d53120ad0badf0249bf4d5720773a17b2df884fd0ecbe2ea689102d9eb
+// 08041501c95934ecd4540c0c4afe025f794fed1bcac3c16623e50fd804729f00c2b6
+// 080577f901ad989bf4e5a572b88b9926514033f94b2e47680072376e4b2fb22f8a35
+// 0806e7877666bb43d8ed33be6ccbddbd4f74d08618bf47e1c102ae3edc2d0030397f
+// 0807d5979090b3e0b2fb5bc48e6c38a398d347ee6abd1571e6635c3a6f22bd17ddea
+
+async postsecretSharing() {
+  //console.log(this.rsa.publicKey)
+  //bc.bigintToText(this.rsa.publicKey);
+  let clavescompartidas = {
+    shares:["08019fb22cf853b58144156692a2824f10bd7592919544193bfcbe4f7dcf6a7a8784",
+            "08024895d22fc64166e87992a6ea08849d774fd219776877c261bf6d6b966b15f20a",
+            "080387cfd0d53120ad0badf0249bf4d5720773a17b2df884fd0ecbe2ea689102d9eb",
+            "08041501c95934ecd4540c0c4afe025f794fed1bcac3c16623e50fd804729f00c2b6"
+            ]
+// 080577f901ad989bf4e5a572b88b9926514033f94b2e47680072376e4b2fb22f8a35    solo nos hace falta 4 el resto los dejo comentados
+// 0806e7877666bb43d8ed33be6ccbddbd4f74d08618bf47e1c102ae3edc2d0030397f
+// 0807d5979090b3e0b2fb5bc48e6c38a398d347ee6abd1571e6635c3a6f22bd17ddea
+  };
+  this.casoService. postsecretSharing(clavescompartidas).subscribe(
+      (data) => {
+        this.secretsharingtext = data["recovered"]
+        console.log(this.secretsharingtext);
+      },
+      
+      (err) => {
+        console.log("err", err);
+      }
+    );
+}
 
 }
 

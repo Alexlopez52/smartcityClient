@@ -43,7 +43,4 @@ export class PublicKey {
         return m > this.n;
     }
 
-    addition (ciphertexts) {  //ciphertexts es un array de lo que he enciptado
-        return ciphertexts.reduce((sum, next) => sum * next % (this._n2), BigInt(1))
-      }
 }

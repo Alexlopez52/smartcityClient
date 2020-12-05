@@ -72,5 +72,13 @@ export class CasoService {
   postsumPaillier(suma: object) {  //
       return this.http.post(this.ambiente.urlCaso + '/postpaillierSum', suma);
         }
+  getpublicKeyPaillier() {
+      return this.http.get(this.ambiente.urlCaso + '/publickeypaillier');
+      }
+
+/////////////////////////////// SECRET SHARING ///////////////////////////////////////////////
+  postsecretSharing(shares: object) {
+    return this.http.post(this.ambiente.urlCaso + '/postsecretsharing', shares);
+  } 
 
   }
