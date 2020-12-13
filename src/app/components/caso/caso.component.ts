@@ -57,19 +57,18 @@ export class CasoComponent implements OnInit {
   async ngOnInit() {
     this.keyPair = await this.rsa.generateKeys();   //me da el keyPair del client
     console.log(this.keyPair);
+    console.log("mis propias claves (cliente)")
     //console.log(this.rsa.publicKey);
     await this.getPublicKeyrsa();
     await this.postpubKeyRSA();
     await this.getPublicKeyTTP();
     await this.postpubKeyRSATTP();
     await this.getPublicKeyPaill();
-    console.log("todo ok")
   }
 
  /////////////////////////AES/////////////////////////////////////
   public async postCaso(event){
     let keybuff =  await crypto.subtle.importKey('raw', hexToBuf(this.keyhex), 'AES-CBC', false, ['encrypt'])
-    console.log("has escrito AES: "+ this.nameaes)
     let encoded = getMessageEncoding(this.nameaes)
 
     this.iv = crypto.getRandomValues(new Uint8Array(16));
@@ -79,14 +78,9 @@ export class CasoComponent implements OnInit {
     },
     keybuff,
     encoded);
-    console.log("encriptado : " +  encrypted)
     let EncryptedDataArray=new Uint8Array(encrypted);
     let EncryptedDataString=ab2str(EncryptedDataArray);
-    console.log("result" + EncryptedDataString)
-    console.log("encriptado : " +  EncryptedDataString)
-    console.log("iv : " +  this.iv)
     let ivStr = ab2str(this.iv) 
-    console.log("ivStr "+ ivStr)
     //lom que hace el post
     this.casoService.postCaso(EncryptedDataString, ivStr).subscribe(
       res =>console.log(res),
@@ -178,6 +172,8 @@ export class CasoComponent implements OnInit {
           let s = bc.hexToBigint(data['msg']);
           let m = bc.bigintToText(this.publicKeyserver.verify(s));
           this.verifiedRSA = m;
+          console.log("El servidor te ha firmado correctamente: " + this.verifiedRSA)
+          
         },
         (err) => {
           console.log("err", err);
@@ -208,6 +204,7 @@ export class CasoComponent implements OnInit {
           (data) => {
             this.publicKeyserver = new Classpublickey(bc.hexToBigint(data["e"]),bc.hexToBigint(data["n"]))
             console.log(this.publicKeyserver);
+            console.log("publicKey (server)")
           },
           (err) => {
             console.log("err", err);
@@ -277,7 +274,7 @@ testblindsignature(){ //firma ciega
           let s = bc.hexToBigint(data['msg']);
            const signedm= (s*bcu.modInv(r,n))%n
            const verifiedm= bc.bigintToText(this.publicKeyserver.verify(signedm))
-          console.log(verifiedm)
+           console.log("el server te ha firmado cegado: " + verifiedm)
          if (verifiedm ==this.sign) //SI EL MENSAJE ES IGUAL AL FIRMADO
           this.verifiedCiega = verifiedm;
           else this.verifiedCiega = "NO SE HA VERIFICADO CON EXITO"
@@ -371,7 +368,7 @@ testblindsignature(){ //firma ciega
            let e =  await this.VerifyProof(proof,body)
            if(e== "zi")
            {
-             console.log("de puting mother")
+             console.log("se verifica correcto")
              this.resultadononrepudiation= "La TTP ha recibido tu mensaje"
              
           }
@@ -389,6 +386,7 @@ testblindsignature(){ //firma ciega
           (data) => {
             this.publicKeyTTP = new Classpublickey(bc.hexToBigint(data["e"]),bc.hexToBigint(data["n"]))
             console.log(this.publicKeyTTP);
+            console.log("publicKey (server TTP)")
           },
           (err) => {
             console.log("err", err);
@@ -451,6 +449,7 @@ async getPublicKeyPaill() {  //pide la publicKey del servidor
         this.publicKeyPaill = new paillierBigint.PublicKey(bc.hexToBigint(data["n"]),bc.hexToBigint(data["g"]))
         console.log("Esta es la public Key paillier del server:");
         console.log(this.publicKeyPaill);
+        console.log("publicKey (server Paillier)")
       },
       (err) => {
         console.log("err", err);
@@ -472,12 +471,12 @@ async getPublicKeyPaill() {  //pide la publicKey del servidor
   let message = {
     encryptedsum: encryptedSum
   };
-  console.log("La encryptedsum funciona")
+  console.log("La encryptedsum funciona: ")
 
   this.casoService.postsumPaillier(message).subscribe(
       (data) => {
         this.sum = bc.hexToBigint(data['sum'])
-        console.log(this.sum);
+        console.log("result = " + this.sum);
       },
       
       (err) => {
@@ -513,7 +512,7 @@ async postsecretSharing() {
   this.casoService. postsecretSharing(clavescompartidas).subscribe(
       (data) => {
         this.secretsharingtext = data["recovered"]
-        console.log(this.secretsharingtext);
+        console.log("el combine del secret sharing funciona: " + this.secretsharingtext);
       },
       
       (err) => {

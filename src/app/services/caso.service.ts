@@ -18,7 +18,6 @@ export class CasoService {
 /////////////////////////AES/////////////////////////////////////
    postCaso(addcaso: string, iv :string){//: Observable<void> 
     let c = {addcaso , iv}
-    console.log(c)
     return this.http.post(this.ambiente.urlCaso + '/addPost', {addcaso, iv, headers: this.headers});
   }
 
